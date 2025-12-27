@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
 public class Ping {
-    @GetMapping("/")
-    public String ping() {
+    @GetMapping("/**")
+    public String fallback() {
         return "Phoneix API App is Running!";
     }
 }
