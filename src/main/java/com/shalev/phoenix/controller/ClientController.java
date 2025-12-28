@@ -1,6 +1,7 @@
 package com.shalev.phoenix.controller;
 
 import com.shalev.phoenix.dto.AuthRequest;
+import com.shalev.phoenix.dto.BuyProductRequest;
 import com.shalev.phoenix.dto.CreateClientRequest;
 import com.shalev.phoenix.model.Client;
 import com.shalev.phoenix.model.Product;
@@ -18,9 +19,9 @@ public class ClientController {
     @Autowired
     private ClientService clientService;
 
-    // 1. Create a new client
-    @PostMapping
-    public ResponseEntity<Client> createClient(@RequestBody CreateClientRequest request) {
+    // Create a new client
+    @PostMapping("/createClient")
+    public ResponseEntity<?> createClient(@RequestBody CreateClientRequest request) {
         try {
             Client newClient = clientService.createClient(
                     request.getId(),
@@ -30,28 +31,34 @@ public class ClientController {
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(newClient);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
         }
     }
 
-    // 2. Authenticate an existing client (login)
+    // Authenticate an existing client (login)
     @PostMapping("/auth")
     public ResponseEntity<String> authenticateClient(@RequestBody AuthRequest auth) {
-        boolean success = clientService.authenticate(
-                auth.getClientId(),
-                auth.getContactType(),
-                auth.getContactValue()
-        );
-        if (success) {
-            return ResponseEntity.ok("Authentication successful");
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Authentication failed: please check your credentials");
+        try {
+            boolean success = clientService.authenticate(
+                    auth.getClientId(),
+                    auth.getContactType(),
+                    auth.getContactValue()
+            );
+            if (success) {
+                return ResponseEntity.ok("Authentication successful");
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Authentication failed: please check your credentials");
+            }
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
         }
     }
 
-    // 3. Get client products (only if authenticated)
-    @GetMapping("/{clientId}/products")
+    // Get client products (only if authenticated)
+    @GetMapping("/getClientProducts/{clientId}")
     public ResponseEntity<List<Product>> getClientProducts(@PathVariable Long clientId) {
         try {
             List<Product> products = clientService.getClientProducts(clientId);
@@ -63,13 +70,15 @@ public class ClientController {
         }
     }
 
-    // 4. Purchase a product for a client
-    @PostMapping("/{clientId}/products/{productId}")
-    public ResponseEntity<String> buyProduct(@PathVariable Long clientId,
-                                             @PathVariable Long productId) {
+    // Purchase a product for a client
+    @PostMapping("/purchaseProduct")
+    public ResponseEntity<String> buyProduct(@RequestBody BuyProductRequest request) {
         try {
-            clientService.buyProduct(clientId, productId);
-            return ResponseEntity.ok("Product " + productId + " purchased by client " + clientId);
+            clientService.buyProduct(request.getClientId(), request.getProductId());
+            return ResponseEntity.ok(
+                    "Product " + request.getProductId() +
+                    " purchased by client " + request.getClientId()
+            );
         } catch (SecurityException se) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Client not authenticated. Please login first.");
@@ -77,5 +86,11 @@ public class ClientController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(e.getMessage());
         }
+    }
+
+    // Get all clients
+    @GetMapping("/getAllClients")
+    public List<Client> getAllClients() {
+        return clientService.getAllClients();
     }
 }

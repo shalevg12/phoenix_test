@@ -3,6 +3,7 @@ package com.shalev.phoenix.controller;
 import com.shalev.phoenix.model.Product;
 import com.shalev.phoenix.service.ProductService;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,7 @@ public class ProductController {
     private ProductService productService;
 
     // Add a new product
-    @PostMapping
+    @PostMapping("/createProduct")
     public ResponseEntity<Product> addProduct(@RequestBody Product newProduct) {
         try {
             Product created = productService.addProduct(
@@ -32,7 +33,7 @@ public class ProductController {
     }
 
     // Update an existing product
-    @PutMapping("/{productId}")
+    @PutMapping("/updateProduct/{productId}")
     public ResponseEntity<Product> updateProduct(@PathVariable Long productId,
                                                  @RequestBody Product updateDetails) {
         try {
@@ -48,7 +49,7 @@ public class ProductController {
     }
 
 
-    @GetMapping
+    @GetMapping("/getAllProducts")
     public List<Product> getAllProducts() {
         return productService.getAllProducts();
     }

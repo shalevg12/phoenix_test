@@ -21,22 +21,38 @@ public class ClientService {
     private ProductService productService;
 
     // Create a new client and add it to the in-memory store
-    public Client createClient(Long id, String name, ContactType contactType, String contactValue) {
+    public Client createClient(Long id, String name, String contactType, String contactValue) {
         if (clients.containsKey(id)) {
             throw new RuntimeException("Client with id " + id + " already exists");
         }
+
+        ContactType type;
+        try {
+            type = ContactType.valueOf(contactType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid contact type: " + contactType);
+        }
+
         Client client = new Client(id, name);
-        client.addContactMethod(contactType, contactValue);  // add initial contact method
+        client.addContactMethod(type, contactValue);  // add initial contact method
         clients.put(id, client);
         return client;
     }
 
     // Authenticate client by id and contact information
-    public boolean authenticate(Long clientId, ContactType type, String value) {
+    public boolean authenticate(Long clientId, String contactType, String value) {
         Client client = clients.get(clientId);
         if (client == null) {
             return false;  // client does not exist
         }
+
+        ContactType type;
+        try {
+            type = ContactType.valueOf(contactType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid contact type: " + contactType);
+        }
+
         boolean matches = client.matchesContact(type, value);
         if (matches) {
             loggedInClients.add(clientId);  // mark client as "logged in"
@@ -54,7 +70,7 @@ public class ClientService {
             throw new RuntimeException("Client with id " + clientId + " not found");
         }
         return client.getProductIds().stream()
-                .map(pid -> productService.getProductById(pid))
+                .map(productService::getProductById)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
@@ -76,5 +92,10 @@ public class ClientService {
             throw new RuntimeException("Client has already purchased this product");
         }
         client.getProductIds().add(productId);
+    }
+
+    // Get All Clients
+    public List<Client> getAllClients() {
+        return new ArrayList<>(clients.values());
     }
 }
